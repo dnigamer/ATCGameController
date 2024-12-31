@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">GameController</string>
+    <string name="app_title">ATC Game Controller</string>
+    <string name="dpad_title">D-Pad</string>
+    <string name="ipaddress_title">IP Address</string>
+    <string name="nowifi_title">WiFi is disconnected</string>
+    <string name="player_title">Player Selection</string>
+    <string name="actions_title">Actions</string>
+    <string name="connection_title">Connection state</string>
+    <string name="connected_state">Connected</string>
+    <string name="disconnected_state">Disconnected</string>
+    <string name="disconnect_action">Disconnect</string>
+    <string name="connect_action">Connect</string>
+    <string name="reconnect_action">Reconnect</string>
+    <string name="startgame_action">Start game</string>
+    <string name="stopgame_action">Stop game</string>
+    <string name="restartgame_action">Restart game</string>
 </resources>
