@@ -1,4 +1,4 @@
-package xyz.dnigamer.gamecontroller;
+package xyz.dnigamer.gamecontroller.Adapters;
 
 import android.content.Context;
 import android.view.View;

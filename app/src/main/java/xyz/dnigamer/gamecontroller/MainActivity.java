@@ -19,6 +19,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import java.util.Objects;
 
+import xyz.dnigamer.gamecontroller.Adapters.HintAdapter;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
