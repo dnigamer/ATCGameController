@@ -1,5 +1,8 @@
 package xyz.dnigamer.gamecontroller;
 
+import static xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection.connectToESP;
+import static xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection.sendDataToESP;
+
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -17,9 +20,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.net.Inet4Address;
 import java.util.Objects;
 
 import xyz.dnigamer.gamecontroller.Adapters.HintAdapter;
+import xyz.dnigamer.gamecontroller.ESPConnection.ConnectToESPTask;
+import xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,6 +47,33 @@ public class MainActivity extends AppCompatActivity {
         } else {
             setValues();
         }
+
+        // Set the onClickListener for the startGameButton
+        findViewById(R.id.connectButton).setOnClickListener( v -> {
+            // change the text of the button buttonViewConnectionState to "Connecting..." ITS NOT v
+            TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
+            connectionStateButton.setText(R.string.connecting_state);
+
+            new ConnectToESPTask().execute();
+            if (ESPConnection.isConnected()) {
+                findViewById(R.id.startGameButton).setEnabled(true);
+                findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
+                findViewById(R.id.restartGameButton).setEnabled(true);
+                findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
+
+                Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
+                playerSpinner.setEnabled(true);
+
+                findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, getTheme()));
+                connectionStateButton.setText(R.string.connected_state);
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ESPConnection.disconnectFromESP();
     }
 
     private void setValues() {
@@ -69,15 +102,17 @@ public class MainActivity extends AppCompatActivity {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
         String wifiName = wifiManager.getConnectionInfo().getSSID();
-        String wifiIpAddress = "N/A";
         wifiName = wifiName.replace("\"", "");
 
+        String wifiIpAddress = null;
         if (!wifiName.equals("<unknown ssid>")) {
             ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
             Network network = Objects.requireNonNull(connectivityManager).getActiveNetwork();
-            wifiIpAddress = Objects.requireNonNull(connectivityManager.getLinkProperties(network)).getLinkAddresses().toString();
-            wifiIpAddress = wifiIpAddress.substring(wifiIpAddress.indexOf("/") + 1, wifiIpAddress.indexOf("]"));
-            wifiIpAddress = wifiIpAddress.substring(3, wifiIpAddress.length() - 3);
+            wifiIpAddress = Objects.requireNonNull(connectivityManager.getLinkProperties(network)).getLinkAddresses().stream()
+                    .filter(linkAddress -> linkAddress.getAddress() instanceof Inet4Address)
+                    .map(linkAddress -> linkAddress.getAddress().getHostAddress())
+                    .findFirst()
+                    .orElse("N/A");
         }
 
         // Set the IP address to the EditText
