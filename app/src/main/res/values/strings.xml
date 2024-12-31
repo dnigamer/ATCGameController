@@ -4,6 +4,7 @@
     <string name="dpad_title">D-Pad</string>
     <string name="ipaddress_title">IP Address</string>
     <string name="nowifi_title">WiFi is disconnected</string>
+    <string name="fetchingdata_title">Fetching data</string>
     <string name="player_title">Player Selection</string>
     <string name="actions_title">Actions</string>
     <string name="connection_title">Connection state</string>
@@ -15,4 +16,10 @@
     <string name="startgame_action">Start game</string>
     <string name="stopgame_action">Stop game</string>
     <string name="restartgame_action">Restart game</string>
+    <string name="setplayer_hint">Choose a player</string>
+    <string-array name="player_array">
+        <item>Choose a player</item>
+        <item>Player 1</item>
+        <item>Player 2</item>
+    </string-array>
 </resources>
