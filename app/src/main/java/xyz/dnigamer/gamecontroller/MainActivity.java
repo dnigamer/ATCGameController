@@ -1,18 +1,13 @@
 package xyz.dnigamer.gamecontroller;
 
-import static xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection.connectToESP;
-import static xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection.sendDataToESP;
-
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,14 +15,14 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.net.Inet4Address;
-import java.util.Objects;
-
 import xyz.dnigamer.gamecontroller.Adapters.HintAdapter;
-import xyz.dnigamer.gamecontroller.ESPConnection.ConnectToESPTask;
+import xyz.dnigamer.gamecontroller.ESPConnection.ConnectionCallback;
 import xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection;
+import xyz.dnigamer.gamecontroller.Utils.ConnectionCheck;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ConnectionCallback {
+
+    private ConnectionCheck connCheck;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,24 +43,53 @@ public class MainActivity extends AppCompatActivity {
             setValues();
         }
 
+        connCheck = new ConnectionCheck(this);
+
         // Set the onClickListener for the startGameButton
-        findViewById(R.id.connectButton).setOnClickListener( v -> {
-            // change the text of the button buttonViewConnectionState to "Connecting..." ITS NOT v
+        findViewById(R.id.connectButton).setOnClickListener(v -> {
             TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
             connectionStateButton.setText(R.string.connecting_state);
+            connectionStateButton.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_light, getTheme()));
 
-            new ConnectToESPTask().execute();
             if (ESPConnection.isConnected()) {
-                findViewById(R.id.startGameButton).setEnabled(true);
-                findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
-                findViewById(R.id.restartGameButton).setEnabled(true);
-                findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
+                System.out.println("Disconnecting from ESP");
+                if (ESPConnection.disconnectFromESP()) {
+                    Toast.makeText(this, "Disconnected from ESP", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                } else {
+                    Toast.makeText(this, "Error disconnecting from ESP", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
 
-                Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
-                playerSpinner.setEnabled(true);
+            try {
+                setValues();
+                if (!connCheck.hasWifiEnabled()) {
+                    Toast.makeText(this, "Please enable WiFi", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                    return;
+                }
+                if (connCheck.getWifiIpAddress() == null) {
+                    Toast.makeText(this, "No IP Address found", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                    return;
+                }
+                if (connCheck.getWifiSSID() == null) {
+                    Toast.makeText(this, "No WiFi SSID found", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                    return;
+                }
+                if (!connCheck.getWifiSSID().equals("ESP8266_AP")) {
+                    Toast.makeText(this, "Please connect to ESP8266_AP WiFi", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                    return;
+                }
 
-                findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, getTheme()));
-                connectionStateButton.setText(R.string.connected_state);
+                new ESPConnection(this);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error connecting to ESP", Toast.LENGTH_SHORT).show();
+                updateUIForDisconnectedState();
             }
         });
     }
@@ -74,6 +98,78 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ESPConnection.disconnectFromESP();
+    }
+
+    @Override
+    public void onConnectionResult(boolean isConnected) {
+        if (isConnected) {
+            findViewById(R.id.startGameButton).setEnabled(true);
+            findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
+            findViewById(R.id.restartGameButton).setEnabled(true);
+            findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
+
+            Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
+            playerSpinner.setEnabled(true);
+
+            findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, getTheme()));
+            TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
+            connectionStateButton.setText(R.string.connected_state);
+
+            TextView v = findViewById(R.id.connectButton);
+            v.setText(R.string.disconnect_action);
+        } else {
+            Toast.makeText(this, "Error connecting to ESP", Toast.LENGTH_SHORT).show();
+            findViewById(R.id.startGameButton).setEnabled(false);
+            findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+            findViewById(R.id.restartGameButton).setEnabled(false);
+            findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+
+            Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
+            playerSpinner.setSelection(0);
+            playerSpinner.setEnabled(false);
+
+            findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_red_light, getTheme()));
+            TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
+            connectionStateButton.setText(R.string.disconnected_state);
+
+            TextView v = findViewById(R.id.connectButton);
+            v.setText(R.string.connect_action);
+        }
+    }
+
+    private void updateUIForConnectedState() {
+        findViewById(R.id.startGameButton).setEnabled(true);
+        findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
+        findViewById(R.id.restartGameButton).setEnabled(true);
+        findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
+
+        Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
+        playerSpinner.setEnabled(true);
+
+        findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, getTheme()));
+        TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
+        connectionStateButton.setText(R.string.connected_state);
+
+        TextView v = findViewById(R.id.connectButton);
+        v.setText(R.string.disconnect_action);
+    }
+
+    private void updateUIForDisconnectedState() {
+        findViewById(R.id.startGameButton).setEnabled(false);
+        findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+        findViewById(R.id.restartGameButton).setEnabled(false);
+        findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+
+        Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
+        playerSpinner.setSelection(0);
+        playerSpinner.setEnabled(false);
+
+        findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_red_light, getTheme()));
+        TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
+        connectionStateButton.setText(R.string.disconnected_state);
+
+        TextView v = findViewById(R.id.connectButton);
+        v.setText(R.string.connect_action);
     }
 
     private void setValues() {
@@ -99,24 +195,11 @@ public class MainActivity extends AppCompatActivity {
 
         EditText editTextIPAddress = findViewById(R.id.editTextIPAddress);
         editTextIPAddress.setText(R.string.fetchingdata_title);
-        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
-        String wifiName = wifiManager.getConnectionInfo().getSSID();
-        wifiName = wifiName.replace("\"", "");
-
-        String wifiIpAddress = null;
-        if (!wifiName.equals("<unknown ssid>")) {
-            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-            Network network = Objects.requireNonNull(connectivityManager).getActiveNetwork();
-            wifiIpAddress = Objects.requireNonNull(connectivityManager.getLinkProperties(network)).getLinkAddresses().stream()
-                    .filter(linkAddress -> linkAddress.getAddress() instanceof Inet4Address)
-                    .map(linkAddress -> linkAddress.getAddress().getHostAddress())
-                    .findFirst()
-                    .orElse("N/A");
-        }
+        ConnectionCheck connCheck = new ConnectionCheck(this);
 
         // Set the IP address to the EditText
-        editTextIPAddress.setText(wifiIpAddress);
+        editTextIPAddress.setText(connCheck.getWifiIpAddress() == null ? "No IP Address" : connCheck.getWifiIpAddress());
         editTextIPAddress.setTextColor(getResources().getColor(android.R.color.black, getTheme()));
 
         findViewById(R.id.startGameButton).setEnabled(false);
