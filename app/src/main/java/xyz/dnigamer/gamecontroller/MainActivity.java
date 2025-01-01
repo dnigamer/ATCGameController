@@ -2,6 +2,7 @@ package xyz.dnigamer.gamecontroller;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -22,7 +23,7 @@ import xyz.dnigamer.gamecontroller.ESPConnection.ConnectionCallback;
 import xyz.dnigamer.gamecontroller.ESPConnection.ESPConnection;
 import xyz.dnigamer.gamecontroller.Utils.ConnectionCheck;
 
-public class MainActivity extends AppCompatActivity implements ConnectionCallback, View.OnClickListener, AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements ConnectionCallback, View.OnClickListener, AdapterView.OnItemSelectedListener, View.OnTouchListener {
 
     private ConnectionCheck connCheck;
     private int player = 0;
@@ -53,15 +54,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                 R.id.connectButton,
                 R.id.startGameButton,
                 R.id.restartGameButton,
-                R.id.buttonUp,
-                R.id.buttonDown,
-                R.id.buttonLeft,
-                R.id.buttonRight
         };
 
         for (int id : buttonIds) {
             findViewById(id).setOnClickListener(this);
         }
+
+        findViewById(R.id.buttonUp).setOnTouchListener(this);
+        findViewById(R.id.buttonDown).setOnTouchListener(this);
+        findViewById(R.id.buttonLeft).setOnTouchListener(this);
+        findViewById(R.id.buttonRight).setOnTouchListener(this);
 
         // on spinner item selected
         Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
@@ -117,14 +119,81 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             handleStartGameButtonClick();
         } else if (id == R.id.restartGameButton) {
             handleRestartGameButtonClick();
-        } else if (id == R.id.buttonUp) {
-            handleButtonUpClick();
-        } else if (id == R.id.buttonDown) {
-            handleButtonDownClick();
-        } else if (id == R.id.buttonLeft) {
-            handleButtonLeftClick();
-        } else if (id == R.id.buttonRight) {
-            handleButtonRightClick();
+        }
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                handleButtonPress(v.getId());
+                return true;
+            case MotionEvent.ACTION_UP:
+                handleButtonRelease(v.getId());
+                v.performClick();
+                return true;
+        }
+        return false;
+    }
+
+    private void handleButtonPress(int buttonId) {
+        if (!ESPConnection.isConnected()) {
+            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        JSONObject message = new JSONObject();
+        try {
+            message.put("command", "move");
+            message.put("player", player);
+            if (buttonId == R.id.buttonUp) {
+                message.put("direction", "up");
+            } else if (buttonId == R.id.buttonDown) {
+                message.put("direction", "down");
+            } else if (buttonId == R.id.buttonLeft) {
+                message.put("direction", "left");
+            } else if (buttonId == R.id.buttonRight) {
+                message.put("direction", "right");
+            }
+            message.put("pressed", true);
+            ESPConnection.sendCommand(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void handleButtonRelease(int buttonId) {
+        if (!ESPConnection.isConnected()) {
+            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        JSONObject message = new JSONObject();
+        try {
+            message.put("command", "move");
+            message.put("player", player);
+            if (buttonId == R.id.buttonUp) {
+                message.put("direction", "up");
+            } else if (buttonId == R.id.buttonDown) {
+                message.put("direction", "down");
+            } else if (buttonId == R.id.buttonLeft) {
+                message.put("direction", "left");
+            } else if (buttonId == R.id.buttonRight) {
+                message.put("direction", "right");
+            }
+            message.put("pressed", false);
+            ESPConnection.sendCommand(message);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
