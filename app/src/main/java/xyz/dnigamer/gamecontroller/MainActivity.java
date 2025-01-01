@@ -25,6 +25,8 @@ import xyz.dnigamer.gamecontroller.Utils.ConnectionCheck;
 public class MainActivity extends AppCompatActivity implements ConnectionCallback, View.OnClickListener, AdapterView.OnItemSelectedListener {
 
     private ConnectionCheck connCheck;
+    private int player = 0;
+    private boolean gameStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,16 +77,29 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if (position != 0) { // Ensure a valid item is selected
+        if (position != 0 && position != player) { // If a player is selected
             JSONObject message = new JSONObject();
             try {
                 message.put("command", "setplayer");
                 message.put("player", position);
+                player = position;
                 ESPConnection.sendCommand(message);
             } catch (Exception e) {
                 e.printStackTrace();
                 Toast.makeText(MainActivity.this, "Error setting player", Toast.LENGTH_SHORT).show();
             }
+        } else if (position == 0 && player != 0) { // If the hint is selected (player disconnected)
+            JSONObject message = new JSONObject();
+            try {
+                message.put("command", "removeplayer");
+                message.put("player", player);
+                player = 0;
+                ESPConnection.sendCommand(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(MainActivity.this, "Error removing player", Toast.LENGTH_SHORT).show();
+            }
+
         }
     }
 
@@ -120,10 +135,28 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
         if (ESPConnection.isConnected()) {
             System.out.println("Disconnecting from ESP");
-            if (ESPConnection.disconnectFromESP()) {
-                Toast.makeText(this, "Disconnected from ESP", Toast.LENGTH_SHORT).show();
-                updateUIForDisconnectedState();
-            } else {
+            try {
+                if (gameStarted) {
+                    JSONObject message = new JSONObject();
+                    message.put("command", "stopgame");
+                    ESPConnection.sendCommand(message);
+
+                    JSONObject messagePlayer = new JSONObject();
+                    messagePlayer.put("command", "removeplayer");
+                    messagePlayer.put("player", player);
+                    ESPConnection.sendCommand(messagePlayer);
+
+                    player = 0;
+                    gameStarted = false;
+
+                    Toast.makeText(this, "Game stopped", Toast.LENGTH_SHORT).show();
+                }
+                if (ESPConnection.disconnectFromESP()) {
+                    Toast.makeText(this, "Disconnected from ESP", Toast.LENGTH_SHORT).show();
+                    updateUIForDisconnectedState();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
                 Toast.makeText(this, "Error disconnecting from ESP", Toast.LENGTH_SHORT).show();
             }
             return;
@@ -173,6 +206,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             return;
         }
 
+        if (gameStarted) {
+            JSONObject message = new JSONObject();
+            try {
+                message.put("command", "stopgame");
+                ESPConnection.sendCommand(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            playerSpinner.setEnabled(true);
+
+            findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
+            ((TextView) findViewById(R.id.startGameButton)).setText(R.string.startgame_action);
+
+            findViewById(R.id.restartGameButton).setEnabled(false);
+            findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+
+            gameStarted = false;
+            return;
+        }
+
         JSONObject message = new JSONObject();
         try {
             message.put("command", "startgame");
@@ -181,11 +235,24 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             e.printStackTrace();
         }
 
+        playerSpinner.setEnabled(false);
+
+        findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
+        ((TextView) findViewById(R.id.startGameButton)).setText(R.string.stopgame_action);
+
+        findViewById(R.id.restartGameButton).setEnabled(true);
+        findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_light, getTheme()));
+
+        gameStarted = true;
     }
 
     private void handleRestartGameButtonClick() {
         if (!ESPConnection.isConnected()) {
             Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -203,10 +270,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         JSONObject message = new JSONObject();
         try {
             message.put("command", "move");
+            message.put("player", player);
             message.put("direction", "up");
             ESPConnection.sendCommand(message);
         } catch (Exception e) {
@@ -219,10 +291,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         JSONObject message = new JSONObject();
         try {
             message.put("command", "move");
+            message.put("player", player);
             message.put("direction", "down");
             ESPConnection.sendCommand(message);
         } catch (Exception e) {
@@ -235,10 +312,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         JSONObject message = new JSONObject();
         try {
             message.put("command", "move");
+            message.put("player", player);
             message.put("direction", "left");
             ESPConnection.sendCommand(message);
         } catch (Exception e) {
@@ -251,10 +333,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!gameStarted) {
+            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         JSONObject message = new JSONObject();
         try {
             message.put("command", "move");
+            message.put("player", player);
             message.put("direction", "right");
             ESPConnection.sendCommand(message);
         } catch (Exception e) {
@@ -272,45 +359,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     @Override
     public void onConnectionResult(boolean isConnected) {
         if (isConnected) {
-            findViewById(R.id.startGameButton).setEnabled(true);
-            findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
-            findViewById(R.id.restartGameButton).setEnabled(true);
-            findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
-
-            Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
-            playerSpinner.setEnabled(true);
-
-            findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, getTheme()));
-            TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
-            connectionStateButton.setText(R.string.connected_state);
-
-            TextView v = findViewById(R.id.connectButton);
-            v.setText(R.string.disconnect_action);
+            updateUIForConnectedState();
         } else {
             Toast.makeText(this, "Error connecting to ESP", Toast.LENGTH_SHORT).show();
-            findViewById(R.id.startGameButton).setEnabled(false);
-            findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
-            findViewById(R.id.restartGameButton).setEnabled(false);
-            findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
-
-            Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
-            playerSpinner.setSelection(0);
-            playerSpinner.setEnabled(false);
-
-            findViewById(R.id.buttonViewConnectionState).setBackgroundColor(getResources().getColor(android.R.color.holo_red_light, getTheme()));
-            TextView connectionStateButton = findViewById(R.id.buttonViewConnectionState);
-            connectionStateButton.setText(R.string.disconnected_state);
-
-            TextView v = findViewById(R.id.connectButton);
-            v.setText(R.string.connect_action);
+            updateUIForDisconnectedState();
         }
     }
 
     private void updateUIForConnectedState() {
         findViewById(R.id.startGameButton).setEnabled(true);
         findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark, getTheme()));
-        findViewById(R.id.restartGameButton).setEnabled(true);
-        findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.holo_red_dark, getTheme()));
+        findViewById(R.id.restartGameButton).setEnabled(false);
+        findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
 
         Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
         playerSpinner.setEnabled(true);
@@ -326,8 +386,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     private void updateUIForDisconnectedState() {
         findViewById(R.id.startGameButton).setEnabled(false);
         findViewById(R.id.startGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+        ((TextView) findViewById(R.id.startGameButton)).setText(R.string.startgame_action);
         findViewById(R.id.restartGameButton).setEnabled(false);
         findViewById(R.id.restartGameButton).setBackgroundColor(getResources().getColor(android.R.color.darker_gray, getTheme()));
+        ((TextView) findViewById(R.id.restartGameButton)).setText(R.string.restartgame_action);
 
         Spinner playerSpinner = findViewById(R.id.playerSelectionSpinner);
         playerSpinner.setSelection(0);
