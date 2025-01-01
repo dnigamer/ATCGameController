@@ -4,6 +4,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.JsonReader;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.DatagramPacket;
@@ -29,6 +31,42 @@ public class ESPConnection {
         connectToESPAsync();
     }
 
+    public static DatagramSocket getSocket() {
+        return socket;
+    }
+
+    public static InetAddress getAddress() {
+        return address;
+    }
+
+    public static boolean isListening() {
+        return listening;
+    }
+
+    public static ConnectionCallback getCallback() {
+        return callback;
+    }
+
+    public static void setSocket(DatagramSocket socket) {
+        ESPConnection.socket = socket;
+    }
+
+    public static void setConnected(boolean connected) {
+        ESPConnection.connected = connected;
+    }
+
+    public static void setAddress(InetAddress address) {
+        ESPConnection.address = address;
+    }
+
+    public static void setListening(boolean listening) {
+        ESPConnection.listening = listening;
+    }
+
+    public static void setCallback(ConnectionCallback callback) {
+        ESPConnection.callback = callback;
+    }
+
     public static void connectToESPAsync() {
         executorService.submit(ESPConnection::connectToESP);
     }
@@ -37,7 +75,7 @@ public class ESPConnection {
         try {
             address = InetAddress.getByName(ip);
             socket = new DatagramSocket();
-            sendDataToESP("{\"type\":\"init\", \"msg\":\"Xiaomi Connected\"}");
+            sendDataToESP("{\"type\":\"init\", \"msg\":\"Android client connected\"}");
             waitForAcknowledgementAsync();
         } catch (IOException e) {
             System.out.println("Error connecting to ESP with error: " + e.getMessage());
@@ -69,13 +107,17 @@ public class ESPConnection {
     }
 
     public static void sendDataToESP(String data) {
-        try {
-            byte[] buffer = data.getBytes();
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
-            socket.send(packet);
-        } catch (IOException e) {
-            System.out.println("Error sending data to ESP");
-        }
+        executorService.submit(() -> {
+            try {
+                byte[] buffer = data.getBytes();
+                System.out.println("Sending data to ESP: " + data);
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
+                socket.send(packet);
+            } catch (Exception e) {
+                System.out.println("Error sending data to ESP: " + e.getMessage());
+                e.printStackTrace(); // Print the full stack trace for more details
+            }
+        });
     }
 
     public static void waitForAcknowledgementAsync() {
@@ -135,6 +177,11 @@ public class ESPConnection {
                 callback.onConnectionResult(isConnected);
             }
         });
+    }
+
+    public static boolean sendCommand(JSONObject message) {
+        sendDataToESP(message.toString());
+        return true;
     }
 
     public static boolean isConnected() {
