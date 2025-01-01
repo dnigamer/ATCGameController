@@ -1,12 +1,13 @@
 # ATCGameController
-A simple game controller for the a game running on an ESP8266 microcontroller.
+A simple game controller written for an Android client for a game running on an ESP8266 microcontroller. 
 
+## Introduction
 This project was made specifically for one of my University projects, where the main goal was to develop some kind of project using microcontrollers.
 I decided to make a simple game running on an ESP8266 microcontroller and also having a controller both using an Android device and an EFM8BB3 microcontroller, a game pad, and with another ESP8266.
 
-The game this controller was made for is a recreation of the classic game "Pong", where each player has to control a paddle to prevent the ball from hitting the wall behind it.
+The game this controller was made for is a recreation of the classic game "Pong", where each player has to control a paddle to prevent the ball from hitting the wall behind it. This game was developed using the NodeMCU framework with the game being written entirely in Lua, and the controller was developed using Keil C51 and the EFM8BB3 library from SiLabs. 
 
-The game was developed using the NodeMCU framework with the game being written entirely in Lua, and the controller was developed using Keil C51 and the EFM8BB3 library from SiLabs.
+This controller here was developed using Android Studio and Java as a secondary controller for the game, since one of our controllers had an technical issue with it's UART module.
 
 ## Build
 To build this Android project, you will need to have Android Studio installed on your computer.<br>
