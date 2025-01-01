@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.JsonReader;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -75,11 +76,16 @@ public class ESPConnection {
         try {
             address = InetAddress.getByName(ip);
             socket = new DatagramSocket();
-            sendDataToESP("{\"type\":\"init\", \"msg\":\"Android client connected\"}");
+            JSONObject message = new JSONObject();
+            message.put("type", "init");
+            message.put("msg", "Android client connected");
+            sendCommand(message);
             waitForAcknowledgementAsync();
         } catch (IOException e) {
             System.out.println("Error connecting to ESP with error: " + e.getMessage());
             notifyConnectionResult(false);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 

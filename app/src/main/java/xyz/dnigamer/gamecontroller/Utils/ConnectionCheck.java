@@ -18,6 +18,10 @@ public class ConnectionCheck {
         this.context = context;
     }
 
+    public Context getContext() {
+        return context;
+    }
+
     public boolean hasWifiEnabled() {
         WifiManager wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
         return wifiManager.isWifiEnabled();

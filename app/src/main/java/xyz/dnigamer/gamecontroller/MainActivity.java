@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-        return;
+        // Do nothing
     }
 
     @Override
@@ -333,91 +333,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             e.printStackTrace();
         }
     }
-
-    private void handleButtonUpClick() {
-        if (!ESPConnection.isConnected()) {
-            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!gameStarted) {
-            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        JSONObject message = new JSONObject();
-        try {
-            message.put("command", "move");
-            message.put("player", player);
-            message.put("direction", "up");
-            ESPConnection.sendCommand(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleButtonDownClick() {
-        if (!ESPConnection.isConnected()) {
-            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!gameStarted) {
-            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        JSONObject message = new JSONObject();
-        try {
-            message.put("command", "move");
-            message.put("player", player);
-            message.put("direction", "down");
-            ESPConnection.sendCommand(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleButtonLeftClick() {
-        if (!ESPConnection.isConnected()) {
-            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!gameStarted) {
-            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        JSONObject message = new JSONObject();
-        try {
-            message.put("command", "move");
-            message.put("player", player);
-            message.put("direction", "left");
-            ESPConnection.sendCommand(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleButtonRightClick() {
-        if (!ESPConnection.isConnected()) {
-            Toast.makeText(this, "Not connected to ESP", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!gameStarted) {
-            Toast.makeText(this, "Game not started", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        JSONObject message = new JSONObject();
-        try {
-            message.put("command", "move");
-            message.put("player", player);
-            message.put("direction", "right");
-            ESPConnection.sendCommand(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     @Override
     protected void onDestroy() {
