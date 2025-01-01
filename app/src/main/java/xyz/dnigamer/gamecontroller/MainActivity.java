@@ -81,6 +81,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         if (position != 0 && position != player) { // If a player is selected
             JSONObject message = new JSONObject();
+            if (player != 0) { // If a player is already selected
+                try {
+                    message.put("command", "removeplayer");
+                    message.put("player", player);
+                    ESPConnection.sendCommand(message);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(MainActivity.this, "Error removing player", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
             try {
                 message.put("command", "setplayer");
                 message.put("player", position);
@@ -101,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                 e.printStackTrace();
                 Toast.makeText(MainActivity.this, "Error removing player", Toast.LENGTH_SHORT).show();
             }
-
         }
     }
 
